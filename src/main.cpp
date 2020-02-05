@@ -3,6 +3,8 @@
 // #include <ClickEncoder.h>
 // #include <Adafruit_PCD8544.h>
 
+#include <Config.h>
+
 
 #define SHUTTER_PIN 13
 #define STEPPER_PIN1 2
@@ -34,26 +36,24 @@ enum State {
     PREVIEW,
 };
 
-int totalDistance;
-int interval;
 int targetPos;
-int stepsPerMM;
-int exposureTime;
-bool backwards;
 int i;
 State state;
+Config config;
 
 void setup() {
-    stepsPerMM = 183; // 183 bei fullstepping auf novoflex
-    totalDistance = 5*stepsPerMM;
-    interval = 0.5*stepsPerMM; 
-    backwards = false;
-    exposureTime = 1000;
+    config = {};
+    config.stepsPerMM = 183; // 183 bei fullstepping auf novoflex
+    config.totalDistance = 5*config.stepsPerMM;
+    config.interval = 0.5*config.stepsPerMM; 
+    config.backwards = false;
+    config.exposureTime = 1000;
+    if (config.backwards){
+        config.interval = -config.interval;
+    }
+
     targetPos = 0;
     i = 0;
-    if (backwards){
-        interval = -interval;
-    }
     state = READY;
 
     Serial.begin(9600);
@@ -85,49 +85,49 @@ void loop() {
             if(str.startsWith("start")){
                 state = BRACKETING;
                 targetPos = 0;
-                if (!backwards){
-                    interval = abs(interval);
+                if (!config.backwards){
+                    config.interval = abs(config.interval);
                 } else {
-                    interval = -abs(interval);
+                    config.interval = -abs(config.interval);
                 }
                 stepper.moveTo(targetPos);
                 delay(2000);
             } else if (str.startsWith("preview")) {
                 state = PREVIEW;
-                stepper.moveTo(!backwards ? totalDistance: -totalDistance); //-totalDistance für rückwärts
+                stepper.moveTo(!config.backwards ? config.totalDistance: -config.totalDistance); //-totalDistance für rückwärts
             } else if (str.startsWith("dist")){
                 int x = parseConfigString(&str);
-                totalDistance = x*stepsPerMM;
+                config.totalDistance = x*config.stepsPerMM;
                 Serial.print("Setting totalDistance to "); Serial.print(x); Serial.println("mm");
             } else if (str.startsWith("interval")){
                 float x =parseConfigStringF32(&str);
-                interval = x*stepsPerMM;
+                config.interval = x*config.stepsPerMM;
                 Serial.print("Setting interval to ");
                 Serial.print(x);
                 Serial.print("mm (");
-                Serial.print(interval);
+                Serial.print(config.interval);
                 Serial.println(" steps)");
             } else if (str.startsWith("dir")){
                 if (parseConfigString(&str)>0){
-                    backwards = false;
+                    config.backwards = false;
                     Serial.println("Setting direction to forwards");
                 } else {
-                    backwards = true;
+                    config.backwards = true;
                     Serial.println("Setting direction to backwards");
                 }
             } else if (str.startsWith("exp")) {
-                exposureTime = parseConfigString(&str);
-                Serial.print("Setting exposure time to "); Serial.print(exposureTime); Serial.println("ms");
+                config.exposureTime = parseConfigString(&str);
+                Serial.print("Setting exposure time to "); Serial.print(config.exposureTime); Serial.println("ms");
             } else if(str.startsWith("print")){
-                Serial.print("distance="); Serial.print(totalDistance/stepsPerMM); Serial.println("mm");
-                Serial.print("interval="); Serial.print((float)abs(interval)/(float)stepsPerMM); Serial.println("mm");
-                Serial.print("exposure="); Serial.print(exposureTime); Serial.println("ms");
-                Serial.println(!backwards ? "direction=fowards":"Direction=backwards");
-                Serial.print(totalDistance/interval+2); Serial.println(" photos will be taken");
+                Serial.print("distance="); Serial.print(config.totalDistance/config.stepsPerMM); Serial.println("mm");
+                Serial.print("interval="); Serial.print((float)abs(config.interval)/(float)config.stepsPerMM); Serial.println("mm");
+                Serial.print("exposure="); Serial.print(config.exposureTime); Serial.println("ms");
+                Serial.println(!config.backwards ? "direction=fowards":"Direction=backwards");
+                Serial.print(config.totalDistance/config.interval+2); Serial.println(" photos will be taken");
             } else if (str.startsWith("mov")){
                 float dist = parseConfigStringF32(&str);
                 Serial.print("Moving "); Serial.print(dist); Serial.println("mm");
-                stepper.setCurrentPosition(-(dist*stepsPerMM));
+                stepper.setCurrentPosition(-(dist*config.stepsPerMM));
                 state=HOMING;
                 stepper.moveTo(0);
             } else if (str.startsWith("speed")){
@@ -145,21 +145,21 @@ void loop() {
         stepper.run();
         if (stepper.currentPosition() == targetPos) {
             i++;
-            Serial.print("taking picture "); Serial.print(i); Serial.print(" of "); Serial.println(totalDistance/interval+2);
-            takePhoto(exposureTime);
-            if (abs(targetPos)>totalDistance){
+            Serial.print("taking picture "); Serial.print(i); Serial.print(" of "); Serial.println(config.totalDistance/config.interval+2);
+            takePhoto(config.exposureTime);
+            if (abs(targetPos)>config.totalDistance){
                 state = HOMING;
                 targetPos = 0;
                 i = 0;
             } else {
-                targetPos+=interval;
+                targetPos+=config.interval;
             }
             stepper.moveTo(targetPos);
         }
         break;
     case PREVIEW:
         stepper.run();
-        if(abs(stepper.currentPosition())>=totalDistance){
+        if(abs(stepper.currentPosition())>=config.totalDistance){
             state = HOMING;
             stepper.moveTo(0);
         }
