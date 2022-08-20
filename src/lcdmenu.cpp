@@ -63,7 +63,7 @@ void LCDMenu::resetDefaults()
   // turnBacklightOn();
 }
 
-void LCDMenu::draw()
+void LCDMenu::drawMenu()
 {
   if (page == 1)
   {

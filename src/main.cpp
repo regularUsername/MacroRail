@@ -81,81 +81,32 @@ void setup() {
     pinMode(SHUTTER_PIN,OUTPUT);
 }
 
-int parseConfigString(String *str){
-    String subs = str->substring(str->lastIndexOf("=")+1);
-    // Serial.print("substring: "); Serial.println(subs);
-    return subs.toInt();
-}
-float parseConfigStringF32(String *str){
-    String subs = str->substring(str->lastIndexOf("=")+1);
-    // Serial.print("substring: "); Serial.println(subs);
-    return subs.toFloat();
-}
-
 void loop() {
     switch (state) {
     case READY:
-        if (Serial.available()>0){
-            String str = Serial.readStringUntil('\n');
-            // Serial.println(str);
-            if(str.startsWith("start")){
+            if(lcdmenu.checkStartFlag()){
                 state = BRACKETING;
+                config.totalDistance = lcdmenu.getDistance()*config.stepsPerMM;
+                config.interval = lcdmenu.getInterval()*config.stepsPerMM;
+                config.exposureTime = lcdmenu.getExposureTime();
+
                 targetPos = 0;
-                if (!config.backwards){
+                if (lcdmenu.getForward()){
                     config.interval = abs(config.interval);
                 } else {
                     config.interval = -abs(config.interval);
                 }
                 stepper.moveTo(targetPos);
                 delay(2000);
-            } else if (str.startsWith("preview")) {
-                state = PREVIEW;
-                stepper.moveTo(!config.backwards ? config.totalDistance: -config.totalDistance); //-totalDistance für rückwärts
-            } else if (str.startsWith("dist")){
-                int x = parseConfigString(&str);
-                config.totalDistance = x*config.stepsPerMM;
-                Serial.print("Setting totalDistance to "); Serial.print(x); Serial.println("mm");
-            } else if (str.startsWith("interval")){
-                float x =parseConfigStringF32(&str);
-                config.interval = x*config.stepsPerMM;
-                Serial.print("Setting interval to ");
-                Serial.print(x);
-                Serial.print("mm (");
-                Serial.print(config.interval);
-                Serial.println(" steps)");
-            } else if (str.startsWith("dir")){
-                if (parseConfigString(&str)>0){
-                    config.backwards = false;
-                    Serial.println("Setting direction to forwards");
-                } else {
-                    config.backwards = true;
-                    Serial.println("Setting direction to backwards");
+            } else {
+                // do menu stuff
+                lcdmenu.drawMenu();
+                int8_t dir = readRotaryEncoder();
+                if(encoder->getButton() == ClickEncoder::Clicked){
+                    lcdmenu.select();
                 }
-            } else if (str.startsWith("exp")) {
-                config.exposureTime = parseConfigString(&str);
-                Serial.print("Setting exposure time to "); Serial.print(config.exposureTime); Serial.println("ms");
-            } else if(str.startsWith("print")){
-                Serial.print("distance="); Serial.print(config.totalDistance/config.stepsPerMM); Serial.println("mm");
-                Serial.print("interval="); Serial.print((float)abs(config.interval)/(float)config.stepsPerMM); Serial.println("mm");
-                Serial.print("exposure="); Serial.print(config.exposureTime); Serial.println("ms");
-                Serial.println(!config.backwards ? "direction=fowards":"Direction=backwards");
-                Serial.print(config.totalDistance/config.interval+2); Serial.println(" photos will be taken");
-            } else if (str.startsWith("mov")){
-                float dist = parseConfigStringF32(&str);
-                Serial.print("Moving "); Serial.print(dist); Serial.println("mm");
-                stepper.setCurrentPosition(-(dist*config.stepsPerMM));
-                state=HOMING;
-                stepper.moveTo(0);
-            } else if (str.startsWith("speed")){
-                stepper.setMaxSpeed(parseConfigString(&str));
-                Serial.print("Setting speed to "); Serial.println(stepper.maxSpeed());
-            } else if (str.startsWith("accel")){
-                int accel = parseConfigString(&str);
-                stepper.setAcceleration(accel);
-                Serial.print("Setting acceleration to "); Serial.println(accel);
+                lcdmenu.navigate(dir);
             }
-            
-        }
         break;
     case BRACKETING:
         stepper.run();
@@ -185,7 +136,6 @@ void loop() {
         stepper.run();
         if(stepper.currentPosition() == 0){
             state = READY;
-            // Serial.println("action complete");
             stepper.disableOutputs();
         }
         break;

@@ -29,7 +29,7 @@ public:
     void setContrast(uint8_t);
     void resetDefaults();
 
-    void draw();
+    void drawMenu();
     void select();
     void navigate(int8_t);
 
