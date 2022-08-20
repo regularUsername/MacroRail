@@ -1,25 +1,28 @@
 #include <Arduino.h>
 #include <AccelStepper.h>
-// #include <ClickEncoder.h>
-// #include <Adafruit_PCD8544.h>
+#include <ClickEncoder.h>
+#include "lcdmenu.h"
+#include <TimerOne.h>
 
 #include <Config.h>
 
 
-#define SHUTTER_PIN 13
-#define STEPPER_PIN1 2
-#define STEPPER_PIN2 3
-#define STEPPER_PIN3 4
-#define STEPPER_PIN4 5
+#define SHUTTER_PIN  A7
+#define STEPPER_PIN1 A3
+#define STEPPER_PIN2 A4
+#define STEPPER_PIN3 A5
+#define STEPPER_PIN4 A6
 
 
-// Adafruit_PCD8544 display = Adafruit_PCD8544(5,4,3);
+int8_t readRotaryEncoder();
+void timerIsr();
 
+ClickEncoder *encoder;
+int16_t last, value;
+
+LCDMenu lcdmenu;
 
 AccelStepper stepper(AccelStepper::FULL4WIRE,STEPPER_PIN1,STEPPER_PIN2,STEPPER_PIN3,STEPPER_PIN4);
-// ClickEncoder encoder(A1,A0,A2);
-
-
 
 void takePhoto(int exposure_time) {
     delay(200);
@@ -42,6 +45,19 @@ State state;
 Config config;
 
 void setup() {
+
+    lcdmenu.initialize();
+    lcdmenu.splashscreen();
+    delay(2000);
+    encoder = new ClickEncoder(A1,A0,A2);
+    encoder->setAccelerationEnabled(true);
+
+    Timer1.initialize(1000);
+    Timer1.attachInterrupt(timerIsr);
+
+    last = encoder->getValue();
+
+
     config = {};
     config.stepsPerMM = 183; // 183 bei fullstepping auf novoflex
     config.totalDistance = 5*config.stepsPerMM;
@@ -145,7 +161,7 @@ void loop() {
         stepper.run();
         if (stepper.currentPosition() == targetPos) {
             i++;
-            Serial.print("taking picture "); Serial.print(i); Serial.print(" of "); Serial.println(config.totalDistance/config.interval+2);
+            // Serial.print("taking picture "); Serial.print(i); Serial.print(" of "); Serial.println(config.totalDistance/config.interval+2);
             takePhoto(config.exposureTime);
             if (abs(targetPos)>config.totalDistance){
                 state = HOMING;
@@ -169,9 +185,26 @@ void loop() {
         stepper.run();
         if(stepper.currentPosition() == 0){
             state = READY;
-            Serial.println("action complete");
+            // Serial.println("action complete");
             stepper.disableOutputs();
         }
         break;
     }
+}
+
+void timerIsr() {
+  encoder->service();
+}
+
+int8_t readRotaryEncoder()
+{
+  value += encoder->getValue();
+  if (value > last) {
+    last = value;
+    return 1;
+  }else if (value < last) {
+    last = value;
+    return -1;
+  }
+  return 0;
 }
