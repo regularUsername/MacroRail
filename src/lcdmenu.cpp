@@ -1,7 +1,6 @@
 #include "lcdmenu.h"
 
-// TODO Strings Objekte austauschen (dynamic allocation meiden)
-String menuItems[] = {
+const char* menuItems[]  = {
     "Start",
     "Distance(mm)",
     "Interval(mm)",
@@ -22,7 +21,7 @@ enum
   RESET
 };
 
-const uint8_t menuItemCount = sizeof(menuItems) / sizeof(String);
+const uint8_t menuItemCount = sizeof(menuItems) / sizeof(menuItems[0]);
 
 LCDMenu::LCDMenu() : display(5, 4, 3) {}
 
@@ -60,7 +59,6 @@ void LCDMenu::resetDefaults()
   setContrast(contrast);
   forward = true;
   menuItems[4] = "Direction -->";
-  // turnBacklightOn();
 }
 
 void LCDMenu::drawMenu()
@@ -102,7 +100,7 @@ void LCDMenu::drawMenu()
 
 // TODO add display FixedPoint Menupage method
 // for exposuretimes and intervals smaller than 1mm
-void LCDMenu::displayIntMenuPage(String menuItem, int value, String unit)
+void LCDMenu::displayIntMenuPage(const char *menuItem, int value, const char *unit)
 {
   display.setTextSize(1);
   display.clearDisplay();
@@ -111,7 +109,9 @@ void LCDMenu::displayIntMenuPage(String menuItem, int value, String unit)
   display.print(menuItem);
   display.drawFastHLine(0, 10, 83, BLACK);
   display.setCursor(5, 15);
-  display.print(unit);
+  if(unit!=nullptr){
+    display.print(unit);
+  }
   display.setTextSize(2);
   display.setCursor(5, 25);
   display.print(value);
@@ -119,7 +119,7 @@ void LCDMenu::displayIntMenuPage(String menuItem, int value, String unit)
   display.display();
 }
 
-void LCDMenu::displayStringMenuPage(String menuItem, String value)
+void LCDMenu::displayStringMenuPage(const char *menuItem, const char *value)
 {
   display.setTextSize(1);
   display.clearDisplay();
@@ -136,7 +136,7 @@ void LCDMenu::displayStringMenuPage(String menuItem, String value)
   display.display();
 }
 
-void LCDMenu::displayMenuItem(String item, int position, boolean selected)
+void LCDMenu::displayMenuItem(const char *item, int position, boolean selected)
 {
   if (selected)
   {
@@ -237,7 +237,7 @@ bool LCDMenu::checkStartFlag()
   }
   return false;
 }
-void LCDMenu::drawText(String title,String text){
+void LCDMenu::drawText(const char *title,const char *text){
   display.setTextSize(1);
   display.clearDisplay();
   display.setTextColor(BLACK, WHITE);

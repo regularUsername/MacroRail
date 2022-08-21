@@ -6,9 +6,9 @@ class LCDMenu
 {
 private:
     Adafruit_PCD8544 display;
-    void displayIntMenuPage(String menuItem, int value, String unit = "value");
-    void displayStringMenuPage(String menuItem, String value);
-    void displayMenuItem(String item, int position, boolean selected);
+    void displayIntMenuPage(const char*, int , const char* = nullptr);
+    void displayStringMenuPage(const char *menuItem, const char *value);
+    void displayMenuItem(const char *item, int position, boolean selected);
 
     const uint8_t default_contrast = 55;
     uint8_t contrast = default_contrast;
@@ -32,7 +32,7 @@ public:
     void drawMenu();
     void select();
     void navigate(int8_t);
-    void drawText(String,String);
+    void drawText(const char*,const char*);
 
     uint8_t getDistance();
     uint8_t getExposureTime();
