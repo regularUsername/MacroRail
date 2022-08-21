@@ -237,3 +237,14 @@ bool LCDMenu::checkStartFlag()
   }
   return false;
 }
+void LCDMenu::drawText(String title,String text){
+  display.setTextSize(1);
+  display.clearDisplay();
+  display.setTextColor(BLACK, WHITE);
+  display.setCursor(5, 10);
+  display.print(title);
+  display.drawFastHLine(0, 20, 83, BLACK);
+  display.setCursor(5, 25);
+  display.print(text);
+  display.display();
+}

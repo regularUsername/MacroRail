@@ -4,14 +4,11 @@
 #include "lcdmenu.h"
 #include <TimerOne.h>
 
-#include <Config.h>
-
-
 #define SHUTTER_PIN  A7
-#define STEPPER_PIN1 A3
-#define STEPPER_PIN2 A4
-#define STEPPER_PIN3 A5
-#define STEPPER_PIN4 A6
+#define STEPPER_PIN1 9
+#define STEPPER_PIN2 8
+#define STEPPER_PIN3 7
+#define STEPPER_PIN4 6
 
 
 int8_t readRotaryEncoder();
@@ -42,7 +39,11 @@ enum State {
 int targetPos;
 int i;
 State state;
-Config config;
+char strBuf[16];
+
+int stepsPerMM = 183;
+int totalDistance;
+int interval;
 
 void setup() {
 
@@ -57,26 +58,12 @@ void setup() {
 
     last = encoder->getValue();
 
-
-    config = {};
-    config.stepsPerMM = 183; // 183 bei fullstepping auf novoflex
-    config.totalDistance = 5*config.stepsPerMM;
-    config.interval = 0.5*config.stepsPerMM; 
-    config.backwards = false;
-    config.exposureTime = 1000;
-    if (config.backwards){
-        config.interval = -config.interval;
-    }
-
     targetPos = 0;
     i = 0;
     state = READY;
 
-    Serial.begin(9600);
-    Serial.setTimeout(5000);
-
-    stepper.setMaxSpeed(500);
-    stepper.setAcceleration(200);
+    stepper.setMaxSpeed(250);
+    stepper.setAcceleration(100);
 
     pinMode(SHUTTER_PIN,OUTPUT);
 }
@@ -86,15 +73,15 @@ void loop() {
     case READY:
             if(lcdmenu.checkStartFlag()){
                 state = BRACKETING;
-                config.totalDistance = lcdmenu.getDistance()*config.stepsPerMM;
-                config.interval = lcdmenu.getInterval()*config.stepsPerMM;
-                config.exposureTime = lcdmenu.getExposureTime();
+                totalDistance = lcdmenu.getDistance()*stepsPerMM;
+                interval = lcdmenu.getInterval()*stepsPerMM;
 
+                lcdmenu.drawText("Bracketing","");
                 targetPos = 0;
                 if (lcdmenu.getForward()){
-                    config.interval = abs(config.interval);
+                    interval = abs(interval);
                 } else {
-                    config.interval = -abs(config.interval);
+                    interval = -abs(interval);
                 }
                 stepper.moveTo(targetPos);
                 delay(2000);
@@ -110,23 +97,34 @@ void loop() {
         break;
     case BRACKETING:
         stepper.run();
+        // cancel bracking if button is held
+        if(encoder->getButton() == ClickEncoder::Held){ 
+            state = HOMING;
+            targetPos = 0;
+            i = 0;
+            lcdmenu.drawText("Cancelled","Homing");
+            stepper.moveTo(targetPos);
+        }
         if (stepper.currentPosition() == targetPos) {
             i++;
+            snprintf(strBuf,sizeof(strBuf),"%d of %d",i,totalDistance/abs(interval)+2);
+            lcdmenu.drawText("Bracketing",strBuf);
             // Serial.print("taking picture "); Serial.print(i); Serial.print(" of "); Serial.println(config.totalDistance/config.interval+2);
-            takePhoto(config.exposureTime);
-            if (abs(targetPos)>config.totalDistance){
+            takePhoto(lcdmenu.getExposureTime());
+            if (abs(targetPos)>totalDistance){
                 state = HOMING;
                 targetPos = 0;
                 i = 0;
+                lcdmenu.drawText("Homing","");
             } else {
-                targetPos+=config.interval;
+                targetPos+=interval;
             }
             stepper.moveTo(targetPos);
         }
         break;
     case PREVIEW:
         stepper.run();
-        if(abs(stepper.currentPosition())>=config.totalDistance){
+        if(abs(stepper.currentPosition())>=totalDistance){
             state = HOMING;
             stepper.moveTo(0);
         }

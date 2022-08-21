@@ -32,6 +32,7 @@ public:
     void drawMenu();
     void select();
     void navigate(int8_t);
+    void drawText(String,String);
 
     uint8_t getDistance();
     uint8_t getExposureTime();
