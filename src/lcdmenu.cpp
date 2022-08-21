@@ -23,7 +23,7 @@ enum
 
 const uint8_t menuItemCount = sizeof(menuItems) / sizeof(menuItems[0]);
 
-LCDMenu::LCDMenu() : display(5, 4, 3) {}
+LCDMenu::LCDMenu(uint8_t dc,uint8_t cs, uint8_t rst) : display(dc, cs, rst) {}
 
 // call in void setup(){}
 void LCDMenu::initialize()
@@ -109,7 +109,7 @@ void LCDMenu::displayIntMenuPage(const char *menuItem, int value, const char *un
   display.print(menuItem);
   display.drawFastHLine(0, 10, 83, BLACK);
   display.setCursor(5, 15);
-  if(unit!=nullptr){
+  if(unit != nullptr){
     display.print(unit);
   }
   display.setTextSize(2);
@@ -245,6 +245,8 @@ void LCDMenu::drawText(const char *title,const char *text){
   display.print(title);
   display.drawFastHLine(0, 20, 83, BLACK);
   display.setCursor(5, 25);
-  display.print(text);
+  if (text != nullptr){
+    display.print(text);
+  }
   display.display();
 }

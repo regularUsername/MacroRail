@@ -4,11 +4,20 @@
 #include "lcdmenu.h"
 #include <TimerOne.h>
 
-#define SHUTTER_PIN  A7
-#define STEPPER_PIN1 9
-#define STEPPER_PIN2 8
-#define STEPPER_PIN3 7
-#define STEPPER_PIN4 6
+const uint8_t SHUTTER_PIN  = A3;
+const uint8_t STEPPER_PIN1 = 9;
+const uint8_t STEPPER_PIN2 = 8;
+const uint8_t STEPPER_PIN3 = 7;
+const uint8_t STEPPER_PIN4 = 6;
+const uint8_t ENCODER_A    = A1;
+const uint8_t ENCODER_B    = A0;
+const uint8_t ENCODER_BTN  = A2;
+const uint8_t LCD_DC = 5;
+const uint8_t LCD_CS = 4;
+const uint8_t LCD_RST = 3;
+// because we are using Hardware SPI connect D13 to CLK and D11 to DIN
+// D12 and LCD_CS are not needed but are still Read and Written to during
+// SPI transfer
 
 
 int8_t readRotaryEncoder();
@@ -17,7 +26,7 @@ void timerIsr();
 ClickEncoder *encoder;
 int16_t last, value;
 
-LCDMenu lcdmenu;
+LCDMenu lcdmenu(LCD_DC,LCD_CS,LCD_RST);
 
 AccelStepper stepper(AccelStepper::FULL4WIRE,STEPPER_PIN1,STEPPER_PIN2,STEPPER_PIN3,STEPPER_PIN4);
 
@@ -39,7 +48,6 @@ enum State {
 int targetPos;
 int i;
 State state;
-char strBuf[16];
 
 int stepsPerMM = 183;
 int totalDistance;
@@ -50,7 +58,7 @@ void setup() {
     lcdmenu.initialize();
     lcdmenu.splashscreen();
     delay(2000);
-    encoder = new ClickEncoder(A1,A0,A2);
+    encoder = new ClickEncoder(ENCODER_A,ENCODER_B,ENCODER_BTN);
     encoder->setAccelerationEnabled(true);
 
     Timer1.initialize(1000);
@@ -76,7 +84,7 @@ void loop() {
                 totalDistance = lcdmenu.getDistance()*stepsPerMM;
                 interval = lcdmenu.getInterval()*stepsPerMM;
 
-                lcdmenu.drawText("Bracketing","");
+                lcdmenu.drawText("Bracketing");
                 targetPos = 0;
                 if (lcdmenu.getForward()){
                     interval = abs(interval);
@@ -107,15 +115,15 @@ void loop() {
         }
         if (stepper.currentPosition() == targetPos) {
             i++;
+            char strBuf[16];
             snprintf(strBuf,sizeof(strBuf),"%d of %d",i,totalDistance/abs(interval)+2);
             lcdmenu.drawText("Bracketing",strBuf);
-            // Serial.print("taking picture "); Serial.print(i); Serial.print(" of "); Serial.println(config.totalDistance/config.interval+2);
             takePhoto(lcdmenu.getExposureTime());
             if (abs(targetPos)>totalDistance){
                 state = HOMING;
                 targetPos = 0;
                 i = 0;
-                lcdmenu.drawText("Homing","");
+                lcdmenu.drawText("Homing");
             } else {
                 targetPos+=interval;
             }

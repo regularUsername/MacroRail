@@ -23,7 +23,7 @@ private:
     uint8_t window = 0;
 
 public:
-    LCDMenu();
+    LCDMenu(uint8_t,uint8_t,uint8_t);
     void initialize();
     void splashscreen();
     void setContrast(uint8_t);
@@ -32,7 +32,7 @@ public:
     void drawMenu();
     void select();
     void navigate(int8_t);
-    void drawText(const char*,const char*);
+    void drawText(const char*,const char* = nullptr);
 
     uint8_t getDistance();
     uint8_t getExposureTime();
