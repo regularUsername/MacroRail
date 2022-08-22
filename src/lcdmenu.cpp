@@ -1,6 +1,6 @@
 #include "lcdmenu.h"
 
-const char* menuItems[]  = {
+const char *menuItems[] = {
     "Start",
     "Distance(mm)",
     "Interval(mm)",
@@ -23,7 +23,10 @@ enum
 
 const uint8_t menuItemCount = sizeof(menuItems) / sizeof(menuItems[0]);
 
-LCDMenu::LCDMenu(uint8_t dc,uint8_t cs, uint8_t rst) : display(dc, cs, rst) {}
+LCDMenu::LCDMenu(uint8_t dc, uint8_t cs, uint8_t rst) : display(dc, cs, rst)
+{
+  interval *= interval_div;
+}
 
 // call in void setup(){}
 void LCDMenu::initialize()
@@ -69,7 +72,7 @@ void LCDMenu::drawMenu()
     display.clearDisplay();
     display.setTextColor(BLACK, WHITE);
     display.setCursor(15, 0);
-    display.print("MAIN MENU");
+    display.print("Macro Rail");
     display.drawFastHLine(0, 10, 83, BLACK);
 
     displayMenuItem(menuItems[window], 15, pos - window == 0);
@@ -89,7 +92,7 @@ void LCDMenu::drawMenu()
       displayIntMenuPage(*item, distance, "mm");
       break;
     case INTERVAL:
-      displayIntMenuPage(*item, interval, "mm");
+      displayFractionalIntMenuPage(*item, interval, "mm");
       break;
     case EXPOSURE:
       displayIntMenuPage(*item, exposureTime, "sec");
@@ -109,12 +112,39 @@ void LCDMenu::displayIntMenuPage(const char *menuItem, int value, const char *un
   display.print(menuItem);
   display.drawFastHLine(0, 10, 83, BLACK);
   display.setCursor(5, 15);
-  if(unit != nullptr){
+  if (unit != nullptr)
+  {
     display.print(unit);
   }
   display.setTextSize(2);
   display.setCursor(5, 25);
   display.print(value);
+  display.setTextSize(2);
+  display.display();
+}
+
+void LCDMenu::displayFractionalIntMenuPage(const char *menuItem, int value, const char *unit)
+{
+
+  display.setTextSize(1);
+  display.clearDisplay();
+  display.setTextColor(BLACK, WHITE);
+  display.setCursor(5, 0);
+  display.print(menuItem);
+  display.drawFastHLine(0, 10, 83, BLACK);
+  display.setCursor(5, 15);
+  if (unit != nullptr)
+  {
+    display.print(unit);
+  }
+  display.setTextSize(2);
+  display.setCursor(5, 25);
+  char strBuf[16];
+  uint8_t x = value;
+  uint8_t y = value % interval_div;
+  x = (x - y) / interval_div;
+  snprintf(strBuf, sizeof(strBuf), "%02d.%02d", x, y * (100 / interval_div));
+  display.print(strBuf);
   display.setTextSize(2);
   display.display();
 }
@@ -193,11 +223,14 @@ void LCDMenu::select(bool longpress)
     switch (pos)
     {
     case START:
-    if(!longpress){
-      startFlag = true;
-    } else {
-      previewFlag = true;
-    }
+      if (!longpress)
+      {
+        startFlag = true;
+      }
+      else
+      {
+        dryRunFlag = true;
+      }
       break;
     case DIRECTION:
       forward = !forward;
@@ -241,15 +274,17 @@ bool LCDMenu::checkStartFlag()
   }
   return false;
 }
-  bool LCDMenu::checkPreveiwFlag(){
-  if (previewFlag)
+bool LCDMenu::checkDryRunFlag()
+{
+  if (dryRunFlag)
   {
-    previewFlag = false;
+    dryRunFlag = false;
     return true;
   }
   return false;
 }
-void LCDMenu::drawText(const char *title,const char *text){
+void LCDMenu::drawText(const char *title, const char *text)
+{
   display.setTextSize(1);
   display.clearDisplay();
   display.setTextColor(BLACK, WHITE);
@@ -257,7 +292,8 @@ void LCDMenu::drawText(const char *title,const char *text){
   display.print(title);
   display.drawFastHLine(0, 20, 83, BLACK);
   display.setCursor(5, 25);
-  if (text != nullptr){
+  if (text != nullptr)
+  {
     display.print(text);
   }
   display.display();
