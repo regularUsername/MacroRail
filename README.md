@@ -1,5 +1,5 @@
 # MacroRail
-*short description + photo*
+![](example.jpg)
 
 ## Parts used
 - Arduino
@@ -7,6 +7,3 @@
 - Rotary Encoder to navigate the menu
 - LCD (Nokia 5110)
 - manual novoflex macro rail
-
-## TODO
-- [ ] replace serial control with LCD and Rotary Encoder

@@ -70,8 +70,8 @@ void setup() {
     i = 0;
     state = READY;
 
-    stepper.setMaxSpeed(250);
-    stepper.setAcceleration(100);
+    stepper.setMaxSpeed(500);
+    stepper.setAcceleration(150);
 
     pinMode(SHUTTER_PIN,OUTPUT);
 }
@@ -93,19 +93,29 @@ void loop() {
                 }
                 stepper.moveTo(targetPos);
                 delay(2000);
+            } else if(lcdmenu.checkPreveiwFlag()) {
+                state = PREVIEW;
+                lcdmenu.drawText("Preview");
+                totalDistance= lcdmenu.getDistance()*stepsPerMM;
+                stepper.moveTo(totalDistance);
             } else {
                 // do menu stuff
                 lcdmenu.drawMenu();
                 int8_t dir = readRotaryEncoder();
-                if(encoder->getButton() == ClickEncoder::Clicked){
+                switch(encoder->getButton()){
+                    case ClickEncoder::Clicked:
                     lcdmenu.select();
+                    break;
+                    case ClickEncoder::Held:
+                    lcdmenu.select(true);
+                    break;
                 }
                 lcdmenu.navigate(dir);
             }
         break;
     case BRACKETING:
         stepper.run();
-        // cancel bracking if button is held
+        // cancel bracketing if button is held
         if(encoder->getButton() == ClickEncoder::Held){ 
             state = HOMING;
             targetPos = 0;
@@ -134,6 +144,7 @@ void loop() {
         stepper.run();
         if(abs(stepper.currentPosition())>=totalDistance){
             state = HOMING;
+            lcdmenu.drawText("Homing");
             stepper.moveTo(0);
         }
 

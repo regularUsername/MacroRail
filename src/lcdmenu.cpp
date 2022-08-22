@@ -186,14 +186,18 @@ void LCDMenu::navigate(int8_t dir)
   }
 }
 
-void LCDMenu::select()
+void LCDMenu::select(bool longpress)
 {
   if (page == 1)
   { // main menu
     switch (pos)
     {
     case START:
+    if(!longpress){
       startFlag = true;
+    } else {
+      previewFlag = true;
+    }
       break;
     case DIRECTION:
       forward = !forward;
@@ -233,6 +237,14 @@ bool LCDMenu::checkStartFlag()
   if (startFlag)
   {
     startFlag = false;
+    return true;
+  }
+  return false;
+}
+  bool LCDMenu::checkPreveiwFlag(){
+  if (previewFlag)
+  {
+    previewFlag = false;
     return true;
   }
   return false;

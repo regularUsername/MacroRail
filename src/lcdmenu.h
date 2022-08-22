@@ -17,6 +17,7 @@ private:
     uint8_t exposureTime = 1;
     uint8_t interval = 1;
     bool startFlag = false;
+    bool previewFlag = false;
 
     uint8_t page = 1;
     uint8_t pos = 0;
@@ -30,7 +31,7 @@ public:
     void resetDefaults();
 
     void drawMenu();
-    void select();
+    void select(bool longpress=false);
     void navigate(int8_t);
     void drawText(const char*,const char* = nullptr);
 
@@ -39,4 +40,5 @@ public:
     uint8_t getInterval();
     bool getForward();
     bool checkStartFlag(); // check and reset starflag
+    bool checkPreveiwFlag();
 };
