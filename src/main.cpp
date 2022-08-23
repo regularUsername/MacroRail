@@ -91,7 +91,8 @@ void loop()
 
             lcdmenu.drawText("Bracketing");
             targetPos = 0;
-            if (!lcdmenu.getForward()){
+            if (!lcdmenu.getForward())
+            {
                 interval = -interval;
             }
             stepper.moveTo(targetPos);
@@ -105,6 +106,11 @@ void loop()
             totalDistance = lcdmenu.getForward() ? totalDistance : -totalDistance;
 
             stepper.moveTo(totalDistance);
+        }
+        else if (lcdmenu.checkJogmodeFlag())
+        {
+            state = JOGMODE;
+            lcdmenu.drawText("Jog Mode");
         }
         else
         {

@@ -6,6 +6,7 @@ const char *menuItems[] = {
     "Interval(mm)",
     "ExposureTime",
     "Direction -->",
+    "Jog Mode",
     "Contrast",
     "Reset"};
 
@@ -17,6 +18,7 @@ enum
   INTERVAL,
   EXPOSURE,
   DIRECTION,
+  JOGMODE,
   CONTRAST,
   RESET
 };
@@ -239,6 +241,9 @@ void LCDMenu::select(bool longpress)
     case RESET:
       resetDefaults();
       break;
+    case JOGMODE:
+      jogmodeFlag = true;
+      break;
     default: // einträge mit submenu
       page = 2;
     }
@@ -279,6 +284,15 @@ bool LCDMenu::checkDryRunFlag()
   if (dryRunFlag)
   {
     dryRunFlag = false;
+    return true;
+  }
+  return false;
+}
+bool LCDMenu::checkJogmodeFlag()
+{
+  if (jogmodeFlag)
+  {
+    jogmodeFlag = false;
     return true;
   }
   return false;

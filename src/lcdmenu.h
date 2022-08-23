@@ -17,8 +17,11 @@ private:
     uint8_t distance = 10;
     uint8_t exposureTime = 1;
     uint8_t interval = 1;
+
+    // TODO use enum instead of flags?
     bool startFlag = false;
     bool dryRunFlag = false;
+    bool jogmodeFlag = false;
 
     uint8_t page = 1;
     uint8_t pos = 0;
@@ -46,4 +49,5 @@ public:
     bool getForward();
     bool checkStartFlag();
     bool checkDryRunFlag();
+    bool checkJogmodeFlag();
 };
