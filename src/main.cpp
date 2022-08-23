@@ -95,7 +95,7 @@ void loop()
                 interval = -interval;
             }
             stepper.moveTo(targetPos);
-            delay(2000);
+            delay(1000);
         }
         else if (lcdmenu.checkDryRunFlag())
         {
@@ -157,7 +157,7 @@ void loop()
         break;
     case DRYRUN:
         stepper.run();
-        if (abs(stepper.currentPosition()) >= totalDistance)
+        if (abs(stepper.currentPosition()) >= abs(totalDistance))
         {
             state = HOMING;
             lcdmenu.drawText("Homing");
@@ -182,7 +182,7 @@ void loop()
         {
             stepper.move(x * stepsPerMM);
         }
-        if (encoder->getButton() == ClickEncoder::Clicked)
+        if (stepper.currentPosition() == stepper.targetPosition() && encoder->getButton() == ClickEncoder::Clicked)
         {
             state = READY;
             stepper.disableOutputs();
