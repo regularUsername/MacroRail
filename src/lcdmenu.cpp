@@ -75,11 +75,12 @@ void LCDMenu::drawMenu()
     display.setTextColor(BLACK, WHITE);
     display.setCursor(15, 0);
     display.print("Macro Rail");
-    display.drawFastHLine(0, 10, 83, BLACK);
+    display.drawFastHLine(0, 8, 83, BLACK);
 
-    displayMenuItem(menuItems[window], 15, pos - window == 0);
-    displayMenuItem(menuItems[window + 1], 25, pos - (window + 1) == 0);
-    displayMenuItem(menuItems[window + 2], 35, pos - (window + 2) == 0);
+    displayMenuItem(menuItems[window], 10, pos - window == 0);
+    displayMenuItem(menuItems[window + 1], 20, pos - (window + 1) == 0);
+    displayMenuItem(menuItems[window + 2], 30, pos - (window + 2) == 0);
+    displayMenuItem(menuItems[window + 3], 40, pos - (window + 3) == 0);
     display.display();
   }
   else if (page == 2)
@@ -188,7 +189,7 @@ void LCDMenu::navigate(int8_t dir)
   {
     pos = constrain(pos + dir, 0, menuItemCount - 1);
 
-    if (pos > window + 2)
+    if (pos > window + 3)
     {
       window++;
     }

@@ -54,6 +54,7 @@ State state;
 int stepsPerMM = 183;
 int totalDistance;
 int interval;
+bool jogCoarse = false;
 
 void setup()
 {
@@ -106,11 +107,13 @@ void loop()
             totalDistance = lcdmenu.getForward() ? totalDistance : -totalDistance;
 
             stepper.moveTo(totalDistance);
+            // wait until button is released
+            while(encoder->getButton() != ClickEncoder::Open){};
         }
         else if (lcdmenu.checkJogmodeFlag())
         {
             state = JOGMODE;
-            lcdmenu.drawText("Jog Mode");
+            lcdmenu.drawText("Jog Mode", jogCoarse?"10mm per step":"1mm per step");
         }
         else
         {
@@ -181,18 +184,22 @@ void loop()
         break;
     case JOGMODE:
         stepper.run();
-        value += encoder->getValue();
-        int x = value - last;
-        last = value;
+        int x = readRotaryEncoder();
         if (x != 0)
         {
-            stepper.move(x * stepsPerMM);
+            stepper.move(jogCoarse? x*10*stepsPerMM : x * stepsPerMM);
         }
-        if (stepper.currentPosition() == stepper.targetPosition() && encoder->getButton() == ClickEncoder::Clicked)
+        auto b  = encoder->getButton();
+        if (stepper.currentPosition() == stepper.targetPosition() &&  b == ClickEncoder::Clicked)
         {
             state = READY;
             stepper.disableOutputs();
             stepper.setCurrentPosition(0);
+        } else if(b == ClickEncoder::Held) {
+            jogCoarse = !jogCoarse;
+            lcdmenu.drawText("Jog Mode", jogCoarse?"10mm per step":"1mm per step");
+            // wait until button is released
+            while(encoder->getButton() != ClickEncoder::Open){};
         }
     }
 }
@@ -205,15 +212,8 @@ void timerIsr()
 int8_t readRotaryEncoder()
 {
     value += encoder->getValue();
-    if (value > last)
-    {
-        last = value;
-        return 1;
-    }
-    else if (value < last)
-    {
-        last = value;
-        return -1;
-    }
-    return 0;
+    value += encoder->getValue();
+    int x = value - last;
+    last = value;
+    return x;
 }
