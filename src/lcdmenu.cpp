@@ -11,7 +11,7 @@ const char *menuItems[] = {
     "Reset"};
 
 // immer synchron mit menuItems halten
-enum
+typedef enum
 {
   START,
   DISTANCE,
@@ -21,7 +21,7 @@ enum
   JOGMODE,
   CONTRAST,
   RESET
-};
+} menuItems_e;
 
 const uint8_t menuItemCount = sizeof(menuItems) / sizeof(menuItems[0]);
 
@@ -88,16 +88,16 @@ void LCDMenu::drawMenu()
     auto item = &menuItems[pos];
     switch (pos)
     {
-    case CONTRAST:
+    case menuItems_e::CONTRAST:
       displayIntMenuPage(*item, contrast);
       break;
-    case DISTANCE:
+    case menuItems_e::DISTANCE:
       displayIntMenuPage(*item, distance, "mm");
       break;
-    case INTERVAL:
+    case menuItems_e::INTERVAL:
       displayFractionalIntMenuPage(*item, interval, "mm");
       break;
-    case EXPOSURE:
+    case menuItems_e::EXPOSURE:
       displayIntMenuPage(*item, exposureTime, "sec");
       break;
     }
@@ -202,17 +202,17 @@ void LCDMenu::navigate(int8_t dir)
   {
     switch (pos)
     { // nur die einträge mit submenu
-    case CONTRAST:
+    case menuItems_e::CONTRAST:
       contrast += dir;
       setContrast(contrast);
       break;
-    case DISTANCE:
+    case menuItems_e::DISTANCE:
       distance += dir;
       break;
-    case EXPOSURE:
+    case menuItems_e::EXPOSURE:
       exposureTime = constrain(exposureTime + dir, 0, 255);
       break;
-    case INTERVAL:
+    case menuItems_e::INTERVAL:
       interval += dir;
       break;
     }
@@ -225,25 +225,25 @@ void LCDMenu::select(bool longpress)
   { // main menu
     switch (pos)
     {
-    case START:
+    case menuItems_e::START:
       if (!longpress)
       {
-        startFlag = true;
+        action = menuAction::START;
       }
       else
       {
-        dryRunFlag = true;
+        action = menuAction::DRYRUN;
       }
       break;
-    case DIRECTION:
+    case menuItems_e::DIRECTION:
       forward = !forward;
       menuItems[4] = forward ? "Direction -->" : "Direction <--";
       break;
-    case RESET:
+    case menuItems_e::RESET:
       resetDefaults();
       break;
-    case JOGMODE:
-      jogmodeFlag = true;
+    case menuItems_e::JOGMODE:
+      action = menuAction::JOGMODE;
       break;
     default: // einträge mit submenu
       page = 2;
@@ -270,33 +270,6 @@ uint8_t LCDMenu::getInterval()
 bool LCDMenu::getForward()
 {
   return forward;
-}
-bool LCDMenu::checkStartFlag()
-{
-  if (startFlag)
-  {
-    startFlag = false;
-    return true;
-  }
-  return false;
-}
-bool LCDMenu::checkDryRunFlag()
-{
-  if (dryRunFlag)
-  {
-    dryRunFlag = false;
-    return true;
-  }
-  return false;
-}
-bool LCDMenu::checkJogmodeFlag()
-{
-  if (jogmodeFlag)
-  {
-    jogmodeFlag = false;
-    return true;
-  }
-  return false;
 }
 void LCDMenu::drawText(const char *title, const char *text)
 {

@@ -4,6 +4,15 @@
 
 class LCDMenu
 {
+public:
+    typedef enum
+    {
+        DO_NOTHING,
+        START,
+        DRYRUN,
+        JOGMODE,
+    } menuAction;
+
 private:
     Adafruit_PCD8544 display;
     void displayIntMenuPage(const char *, int, const char * = nullptr);
@@ -18,10 +27,7 @@ private:
     uint8_t exposureTime = 1;
     uint8_t interval = 1;
 
-    // TODO use enum instead of flags?
-    bool startFlag = false;
-    bool dryRunFlag = false;
-    bool jogmodeFlag = false;
+    menuAction action = DO_NOTHING;
 
     uint8_t page = 1;
     uint8_t pos = 0;
@@ -41,13 +47,16 @@ public:
 
     // divisor for interval setting precision
     //  e.g. 1=1mm, 2=0.5mm, 4=0.25mm, 10=0.1mm
-    const uint8_t interval_div = 4;
+    const uint8_t interval_div = 10;
 
     uint8_t getDistance();
     uint8_t getExposureTime();
     uint8_t getInterval();
     bool getForward();
-    bool checkStartFlag();
-    bool checkDryRunFlag();
-    bool checkJogmodeFlag();
+    menuAction getMenuAction()
+    {
+        auto x = action;
+        action = DO_NOTHING;
+        return x;
+    }
 };

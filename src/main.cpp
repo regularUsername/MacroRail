@@ -54,7 +54,7 @@ State state;
 int stepsPerMM = 183;
 int totalDistance;
 int interval;
-bool jogCoarse = false;
+bool jogFine = false;
 
 void setup()
 {
@@ -84,7 +84,9 @@ void loop()
     switch (state)
     {
     case READY:
-        if (lcdmenu.checkStartFlag())
+    {
+        auto a = lcdmenu.getMenuAction();
+        if (a == LCDMenu::START)
         {
             state = BRACKETING;
             totalDistance = lcdmenu.getDistance() * stepsPerMM;
@@ -99,7 +101,7 @@ void loop()
             stepper.moveTo(targetPos);
             delay(1000);
         }
-        else if (lcdmenu.checkDryRunFlag())
+        else if (a == LCDMenu::DRYRUN)
         {
             state = DRYRUN;
             lcdmenu.drawText("Dry run");
@@ -108,12 +110,13 @@ void loop()
 
             stepper.moveTo(totalDistance);
             // wait until button is released
-            while(encoder->getButton() != ClickEncoder::Open){};
+            while (encoder->getButton() != ClickEncoder::Open);
         }
-        else if (lcdmenu.checkJogmodeFlag())
+        else if (a == LCDMenu::JOGMODE)
         {
             state = JOGMODE;
-            lcdmenu.drawText("Jog Mode", jogCoarse?"10mm per step":"1mm per step");
+            targetPos = stepper.currentPosition();
+            lcdmenu.drawText("Jog Mode", jogFine ? "0.1/step" : "1mm/step");
         }
         else
         {
@@ -131,7 +134,8 @@ void loop()
             }
             lcdmenu.navigate(dir);
         }
-        break;
+    }
+    break;
     case BRACKETING:
         stepper.run();
         // cancel bracketing if button is held
@@ -184,22 +188,26 @@ void loop()
         break;
     case JOGMODE:
         stepper.run();
+        // TODO add backlash compensation on direction change?
         int x = readRotaryEncoder();
         if (x != 0)
         {
-            stepper.move(jogCoarse? x*10*stepsPerMM : x * stepsPerMM);
+            targetPos += jogFine ? x * stepsPerMM / 10 : x * stepsPerMM;
+            stepper.moveTo(targetPos);
         }
-        auto b  = encoder->getButton();
-        if (stepper.currentPosition() == stepper.targetPosition() &&  b == ClickEncoder::Clicked)
+        auto b = encoder->getButton();
+        if (stepper.currentPosition() == stepper.targetPosition() && b == ClickEncoder::Clicked)
         {
             state = READY;
             stepper.disableOutputs();
             stepper.setCurrentPosition(0);
-        } else if(b == ClickEncoder::Held) {
-            jogCoarse = !jogCoarse;
-            lcdmenu.drawText("Jog Mode", jogCoarse?"10mm per step":"1mm per step");
+        }
+        else if (b == ClickEncoder::Held)
+        {
+            jogFine = !jogFine;
+            lcdmenu.drawText("Jog Mode", jogFine ? "0.1mm/step" : "1mm/step");
             // wait until button is released
-            while(encoder->getButton() != ClickEncoder::Open){};
+            while (encoder->getButton() != ClickEncoder::Open);
         }
     }
 }
