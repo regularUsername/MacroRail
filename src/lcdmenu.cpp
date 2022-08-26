@@ -60,7 +60,8 @@ void LCDMenu::setContrast(uint8_t contrast)
 void LCDMenu::resetDefaults()
 {
   contrast = default_contrast;
-  distance = 50;
+  distance = 10;
+  interval = 1;
   setContrast(contrast);
   forward = true;
   menuItems[4] = "Direction -->";
@@ -77,10 +78,10 @@ void LCDMenu::drawMenu()
     display.print("Macro Rail");
     display.drawFastHLine(0, 8, 83, BLACK);
 
-    displayMenuItem(menuItems[window], 10, pos - window == 0);
-    displayMenuItem(menuItems[window + 1], 20, pos - (window + 1) == 0);
-    displayMenuItem(menuItems[window + 2], 30, pos - (window + 2) == 0);
-    displayMenuItem(menuItems[window + 3], 40, pos - (window + 3) == 0);
+    for (uint8_t i = 0; i < 4; i++)
+    {
+      displayMenuItem(menuItems[window + i], 10 * (i + 1), pos - (window + i) == 0);
+    }
     display.display();
   }
   else if (page == 2)
@@ -104,8 +105,6 @@ void LCDMenu::drawMenu()
   }
 }
 
-// TODO add display FixedPoint Menupage method
-// for exposuretimes and intervals smaller than 1mm
 void LCDMenu::displayIntMenuPage(const char *menuItem, int value, const char *unit)
 {
   display.setTextSize(1);
@@ -128,7 +127,6 @@ void LCDMenu::displayIntMenuPage(const char *menuItem, int value, const char *un
 
 void LCDMenu::displayFractionalIntMenuPage(const char *menuItem, int value, const char *unit)
 {
-
   display.setTextSize(1);
   display.clearDisplay();
   display.setTextColor(BLACK, WHITE);

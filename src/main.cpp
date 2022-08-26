@@ -56,6 +56,11 @@ int totalDistance;
 int interval;
 bool jogFine = false;
 
+// used for backlash compensation
+const uint8_t BACKLASH_STEPS = 50; // my version of the 28BYJ-48 stepper has roughly 50 steps of backlash
+int8_t lastDirection = 0;
+long stepperLastPosition = 0;
+
 void setup()
 {
     lcdmenu.initialize();
@@ -180,7 +185,7 @@ void loop()
         break;
     case HOMING:
         stepper.run();
-        if (stepper.currentPosition() == 0)
+        if (stepper.currentPosition() == stepper.targetPosition())
         {
             state = READY;
             stepper.disableOutputs();
@@ -188,13 +193,34 @@ void loop()
         break;
     case JOGMODE:
         stepper.run();
-        // TODO add backlash compensation on direction change?
-        int x = readRotaryEncoder();
-        if (x != 0)
-        {
-            targetPos += jogFine ? x * stepsPerMM / 10 : x * stepsPerMM;
-            stepper.moveTo(targetPos);
+
+        // experimental backlash compensation
+        // get the direction the stepper currently moves
+        int8_t currentDirection = 0;
+        long currentPosition = stepper.currentPosition();
+        if (currentPosition>stepperLastPosition){
+            currentDirection = 1;
+        } else if(currentPosition<stepperLastPosition){
+            currentDirection = -1;
         }
+        stepperLastPosition=currentPosition;
+        
+        // check if the stepper actually moved
+        if(currentDirection!=0){
+            //on direction change add backlash_steps
+            if (currentDirection != lastDirection){
+                targetPos+=BACKLASH_STEPS*currentDirection;
+            }
+            lastDirection = currentDirection;
+        }
+        //backlash compensation end
+
+
+        int x = readRotaryEncoder();
+        if(x!=0){
+            targetPos += jogFine ? x * stepsPerMM / 10 : x * stepsPerMM;
+        }
+        stepper.moveTo(targetPos);
         auto b = encoder->getButton();
         if (stepper.currentPosition() == stepper.targetPosition() && b == ClickEncoder::Clicked)
         {
