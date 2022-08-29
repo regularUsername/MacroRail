@@ -221,6 +221,8 @@ void loop()
             state = READY;
             stepper.disableOutputs();
             stepper.setCurrentPosition(0);
+            // also change this when calling setCurrentPosition() to not confuse the backlash compensation
+            stepperLastPosition = 0;
         }
         else if (b == ClickEncoder::Held)
         {
