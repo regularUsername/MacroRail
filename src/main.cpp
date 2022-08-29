@@ -47,7 +47,6 @@ enum State
     JOGMODE,
 };
 
-int targetPos;
 int i;
 State state;
 
@@ -74,7 +73,6 @@ void setup()
 
     last = encoder->getValue();
 
-    targetPos = 0;
     i = 0;
     state = READY;
 
@@ -98,12 +96,11 @@ void loop()
             interval = (lcdmenu.getInterval() * stepsPerMM) / lcdmenu.interval_div;
 
             lcdmenu.drawText("Bracketing");
-            targetPos = 0;
             if (!lcdmenu.getForward())
             {
                 interval = -interval;
             }
-            stepper.moveTo(targetPos);
+            // stepper.moveTo(targetPos);
             delay(1000);
         }
         else if (a == LCDMenu::DRYRUN)
@@ -111,16 +108,14 @@ void loop()
             state = DRYRUN;
             lcdmenu.drawText("Dry run");
             totalDistance = lcdmenu.getDistance() * stepsPerMM;
-            totalDistance = lcdmenu.getForward() ? totalDistance : -totalDistance;
 
-            stepper.moveTo(totalDistance);
+            stepper.moveTo(lcdmenu.getForward() ? totalDistance : -totalDistance);
             // wait until button is released
             while (encoder->getButton() != ClickEncoder::Open);
         }
         else if (a == LCDMenu::JOGMODE)
         {
             state = JOGMODE;
-            targetPos = stepper.currentPosition();
             lcdmenu.drawText("Jog Mode", jogFine ? "0.1/step" : "1mm/step");
         }
         else
@@ -147,41 +142,38 @@ void loop()
         if (encoder->getButton() == ClickEncoder::Held)
         {
             state = HOMING;
-            targetPos = 0;
             i = 0;
             lcdmenu.drawText("Cancelled", "Homing");
-            stepper.moveTo(targetPos);
+            stepper.moveTo(0);
         }
-        if (stepper.currentPosition() == targetPos)
+        if (stepper.currentPosition() == stepper.targetPosition())
         {
             i++;
             char strBuf[16];
             snprintf(strBuf, sizeof(strBuf), "%d of %d", i, totalDistance / abs(interval) + 1);
             lcdmenu.drawText("Bracketing", strBuf);
             takePhoto(lcdmenu.getExposureTime() * 1000);
-            if (abs(targetPos + interval) > totalDistance)
+            if (abs(stepper.targetPosition() + interval) > totalDistance)
             {
                 state = HOMING;
-                targetPos = 0;
+                stepper.moveTo(0);
                 i = 0;
                 lcdmenu.drawText("Homing");
             }
             else
             {
-                targetPos += interval;
+                stepper.moveTo(stepper.targetPosition() + interval);
             }
-            stepper.moveTo(targetPos);
         }
         break;
     case DRYRUN:
         stepper.run();
-        if (abs(stepper.currentPosition()) >= abs(totalDistance))
+        if (stepper.currentPosition() == stepper.targetPosition())
         {
             state = HOMING;
             lcdmenu.drawText("Homing");
             stepper.moveTo(0);
         }
-
         break;
     case HOMING:
         stepper.run();
@@ -198,29 +190,31 @@ void loop()
         // get the direction the stepper currently moves
         int8_t currentDirection = 0;
         long currentPosition = stepper.currentPosition();
-        if (currentPosition>stepperLastPosition){
+        if (currentPosition > stepperLastPosition)
+        {
             currentDirection = 1;
-        } else if(currentPosition<stepperLastPosition){
+        }
+        else if (currentPosition < stepperLastPosition)
+        {
             currentDirection = -1;
         }
-        stepperLastPosition=currentPosition;
-        
-        // check if the stepper actually moved
-        if(currentDirection!=0){
-            //on direction change add backlash_steps
-            if (currentDirection != lastDirection){
-                targetPos+=BACKLASH_STEPS*currentDirection;
+        stepperLastPosition = currentPosition;
+        // on direction change add backlash_steps
+        if (currentDirection != 0)
+        {
+            if (currentDirection != lastDirection)
+            {
+                // targetPos+=BACKLASH_STEPS*currentDirection;
+                stepper.moveTo(stepper.targetPosition() + BACKLASH_STEPS * currentDirection);
             }
             lastDirection = currentDirection;
         }
-        //backlash compensation end
-
-
         int x = readRotaryEncoder();
-        if(x!=0){
-            targetPos += jogFine ? x * stepsPerMM / 10 : x * stepsPerMM;
+        if (x != 0)
+        {
+            int relative = jogFine ? x * stepsPerMM / 10 : x * stepsPerMM;
+            stepper.moveTo(stepper.targetPosition() + relative);
         }
-        stepper.moveTo(targetPos);
         auto b = encoder->getButton();
         if (stepper.currentPosition() == stepper.targetPosition() && b == ClickEncoder::Clicked)
         {
@@ -245,7 +239,6 @@ void timerIsr()
 
 int8_t readRotaryEncoder()
 {
-    value += encoder->getValue();
     value += encoder->getValue();
     int x = value - last;
     last = value;
