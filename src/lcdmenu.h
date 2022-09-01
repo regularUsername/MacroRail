@@ -22,7 +22,7 @@ private:
 
     const uint8_t default_contrast = 55;
     uint8_t contrast = default_contrast;
-    bool forward = true;
+    int8_t direction = 1;
     uint8_t distance = 10;
     uint8_t exposureTime = 1;
     uint8_t interval = 1;
@@ -52,11 +52,14 @@ public:
     uint8_t getDistance();
     uint8_t getExposureTime();
     uint8_t getInterval();
-    bool getForward();
     menuAction getMenuAction()
     {
         auto x = action;
         action = DO_NOTHING;
         return x;
+    }
+    // 1 = forward, -1 = backward
+    int8_t getDirection(){
+        return direction;
     }
 };

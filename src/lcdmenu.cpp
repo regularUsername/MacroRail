@@ -63,7 +63,7 @@ void LCDMenu::resetDefaults()
   distance = 10;
   interval = 1;
   setContrast(contrast);
-  forward = true;
+  direction = 1;
   menuItems[4] = "Direction -->";
 }
 
@@ -234,8 +234,8 @@ void LCDMenu::select(bool longpress)
       }
       break;
     case menuItems_e::DIRECTION:
-      forward = !forward;
-      menuItems[4] = forward ? "Direction -->" : "Direction <--";
+      direction = -direction;
+      menuItems[4] = direction == 1 ? "Direction -->" : "Direction <--";
       break;
     case menuItems_e::RESET:
       resetDefaults();
@@ -264,10 +264,6 @@ uint8_t LCDMenu::getExposureTime()
 uint8_t LCDMenu::getInterval()
 {
   return interval;
-}
-bool LCDMenu::getForward()
-{
-  return forward;
 }
 void LCDMenu::drawText(const char *title, const char *text)
 {

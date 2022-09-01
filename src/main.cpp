@@ -56,7 +56,7 @@ int interval;
 bool jogFine = false;
 
 // used for backlash compensation
-const uint8_t BACKLASH_STEPS = 50; // my version of the 28BYJ-48 stepper has roughly 50 steps of backlash
+const uint8_t BACKLASH_STEPS = 47; // my version of the 28BYJ-48 stepper has roughly 50 steps of backlash
 int8_t lastDirection = 0;
 long stepperLastPosition = 0;
 
@@ -96,11 +96,18 @@ void loop()
             interval = (lcdmenu.getInterval() * stepsPerMM) / lcdmenu.interval_div;
 
             lcdmenu.drawText("Bracketing");
-            if (!lcdmenu.getForward())
+
+            // backlash compensation
+            int8_t dir = lcdmenu.getDirection();
+            interval = interval * dir;
+            if (lastDirection != dir)
             {
-                interval = -interval;
+                stepper.moveTo(stepper.currentPosition() + BACKLASH_STEPS * dir);
             }
-            // stepper.moveTo(targetPos);
+            if (lastDirection == 0)
+            {
+                lastDirection = dir;
+            }
             delay(1000);
         }
         else if (a == LCDMenu::DRYRUN)
@@ -109,13 +116,24 @@ void loop()
             lcdmenu.drawText("Dry run");
             totalDistance = lcdmenu.getDistance() * stepsPerMM;
 
-            stepper.moveTo(lcdmenu.getForward() ? totalDistance : -totalDistance);
+            int8_t dir = lcdmenu.getDirection();
+            if (lastDirection != dir)
+            {
+                totalDistance += BACKLASH_STEPS;
+            }
+            if (lastDirection == 0)
+            {
+                lastDirection = dir;
+            }
+
+            stepper.moveTo(totalDistance * dir);
             // wait until button is released
             while (encoder->getButton() != ClickEncoder::Open);
         }
         else if (a == LCDMenu::JOGMODE)
         {
             state = JOGMODE;
+            stepperLastPosition = 0;
             lcdmenu.drawText("Jog Mode", jogFine ? "0.1/step" : "1mm/step");
         }
         else
@@ -144,7 +162,16 @@ void loop()
             state = HOMING;
             i = 0;
             lcdmenu.drawText("Cancelled", "Homing");
-            stepper.moveTo(0);
+
+            // backlash compensation
+            if (lastDirection != lcdmenu.getDirection())
+            {
+                stepper.moveTo(0);
+            }
+            else
+            {
+                stepper.moveTo(-BACKLASH_STEPS * lcdmenu.getDirection());
+            }
         }
         if (stepper.currentPosition() == stepper.targetPosition())
         {
@@ -153,10 +180,19 @@ void loop()
             snprintf(strBuf, sizeof(strBuf), "%d of %d", i, totalDistance / abs(interval) + 1);
             lcdmenu.drawText("Bracketing", strBuf);
             takePhoto(lcdmenu.getExposureTime() * 1000);
-            if (abs(stepper.targetPosition() + interval) > totalDistance)
+            if (i >= totalDistance / abs(interval) + 1)
             {
                 state = HOMING;
-                stepper.moveTo(0);
+
+                // backlash compensation
+                if (lastDirection != lcdmenu.getDirection())
+                {
+                    stepper.moveTo(0);
+                }
+                else
+                {
+                    stepper.moveTo(-BACKLASH_STEPS * lcdmenu.getDirection());
+                }
                 i = 0;
                 lcdmenu.drawText("Homing");
             }
@@ -172,7 +208,16 @@ void loop()
         {
             state = HOMING;
             lcdmenu.drawText("Homing");
-            stepper.moveTo(0);
+
+            // backlash compensation
+            if (lastDirection != lcdmenu.getDirection())
+            {
+                stepper.moveTo(0);
+            }
+            else
+            {
+                stepper.moveTo(-BACKLASH_STEPS * lcdmenu.getDirection());
+            }
         }
         break;
     case HOMING:
@@ -180,13 +225,16 @@ void loop()
         if (stepper.currentPosition() == stepper.targetPosition())
         {
             state = READY;
+            delay(500);
+            lastDirection = -lcdmenu.getDirection();
+            stepper.setCurrentPosition(0);
             stepper.disableOutputs();
         }
         break;
     case JOGMODE:
         stepper.run();
 
-        // experimental backlash compensation
+        // backlash compensation
         // get the direction the stepper currently moves
         int8_t currentDirection = 0;
         long currentPosition = stepper.currentPosition();
@@ -221,8 +269,6 @@ void loop()
             state = READY;
             stepper.disableOutputs();
             stepper.setCurrentPosition(0);
-            // also change this when calling setCurrentPosition() to not confuse the backlash compensation
-            stepperLastPosition = 0;
         }
         else if (b == ClickEncoder::Held)
         {
