@@ -57,7 +57,7 @@ bool jogFine = false;
 
 // used for backlash compensation
 const uint8_t BACKLASH_STEPS = 47; // my version of the 28BYJ-48 stepper has roughly 50 steps of backlash
-int8_t lastDirection = 0;
+int8_t lastDirection = -1;
 long stepperLastPosition = 0;
 
 void setup()
@@ -65,12 +65,12 @@ void setup()
     lcdmenu.initialize();
     lcdmenu.splashscreen();
     delay(2000);
+
+    //setup RotaryEncoder
     encoder = new ClickEncoder(ENCODER_A, ENCODER_B, ENCODER_BTN);
     encoder->setAccelerationEnabled(true);
-
     Timer1.initialize(1000);
     Timer1.attachInterrupt(timerIsr);
-
     last = encoder->getValue();
 
     i = 0;
@@ -88,7 +88,7 @@ void loop()
     {
     case READY:
     {
-        auto a = lcdmenu.getMenuAction();
+        LCDMenu::menuAction a = lcdmenu.getMenuAction();
         if (a == LCDMenu::START)
         {
             state = BRACKETING;
@@ -104,10 +104,6 @@ void loop()
             {
                 stepper.moveTo(stepper.currentPosition() + BACKLASH_STEPS * dir);
             }
-            if (lastDirection == 0)
-            {
-                lastDirection = dir;
-            }
             delay(1000);
         }
         else if (a == LCDMenu::DRYRUN)
@@ -121,13 +117,9 @@ void loop()
             {
                 totalDistance += BACKLASH_STEPS;
             }
-            if (lastDirection == 0)
-            {
-                lastDirection = dir;
-            }
 
             stepper.moveTo(totalDistance * dir);
-            // wait until button is released
+            // wait until button is released before proceding
             while (encoder->getButton() != ClickEncoder::Open);
         }
         else if (a == LCDMenu::JOGMODE)
@@ -227,6 +219,7 @@ void loop()
             state = READY;
             delay(500);
             lastDirection = -lcdmenu.getDirection();
+            stepperLastPosition = 0;
             stepper.setCurrentPosition(0);
             stepper.disableOutputs();
         }
@@ -274,7 +267,7 @@ void loop()
         {
             jogFine = !jogFine;
             lcdmenu.drawText("Jog Mode", jogFine ? "0.1mm/step" : "1mm/step");
-            // wait until button is released
+            // wait until button is released before proceding
             while (encoder->getButton() != ClickEncoder::Open);
         }
     }
