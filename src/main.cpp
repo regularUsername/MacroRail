@@ -19,11 +19,9 @@ const uint8_t LCD_RST = 3;
 // D12 and LCD_CS are not needed but are still Read and Written to during
 // SPI transfer
 
-int8_t readRotaryEncoder();
 void timerIsr();
 
 ClickEncoder *encoder;
-int16_t last, value;
 
 LCDMenu lcdmenu(LCD_DC, LCD_CS, LCD_RST);
 
@@ -71,7 +69,6 @@ void setup()
     encoder->setAccelerationEnabled(true);
     Timer1.initialize(1000);
     Timer1.attachInterrupt(timerIsr);
-    last = encoder->getValue();
 
     i = 0;
     state = READY;
@@ -132,7 +129,6 @@ void loop()
         {
             // do menu stuff
             lcdmenu.drawMenu();
-            int8_t dir = readRotaryEncoder();
             switch (encoder->getButton())
             {
             case ClickEncoder::Clicked:
@@ -142,7 +138,7 @@ void loop()
                 lcdmenu.select(true);
                 break;
             }
-            lcdmenu.navigate(dir);
+            lcdmenu.navigate(encoder->getValue());
         }
     }
     break;
@@ -245,12 +241,11 @@ void loop()
         {
             if (currentDirection != lastDirection)
             {
-                // targetPos+=BACKLASH_STEPS*currentDirection;
                 stepper.moveTo(stepper.targetPosition() + BACKLASH_STEPS * currentDirection);
             }
             lastDirection = currentDirection;
         }
-        int x = readRotaryEncoder();
+        int x = encoder->getValue();
         if (x != 0)
         {
             int relative = jogFine ? x * stepsPerMM / 10 : x * stepsPerMM;
@@ -276,12 +271,4 @@ void loop()
 void timerIsr()
 {
     encoder->service();
-}
-
-int8_t readRotaryEncoder()
-{
-    value += encoder->getValue();
-    int x = value - last;
-    last = value;
-    return x;
 }

@@ -15,6 +15,7 @@ public:
 
 private:
     Adafruit_PCD8544 display;
+    void displayHeader(const char *text);
     void displayIntMenuPage(const char *, int, const char * = nullptr);
     void displayStringMenuPage(const char *menuItem, const char *value);
     void displayMenuItem(const char *item, int position, boolean selected);
@@ -49,9 +50,18 @@ public:
     //  e.g. 1=1mm, 2=0.5mm, 4=0.25mm, 10=0.1mm
     const uint8_t interval_div = 10;
 
-    uint8_t getDistance();
-    uint8_t getExposureTime();
-    uint8_t getInterval();
+    uint8_t getDistance()
+    {
+        return distance;
+    }
+    uint8_t getExposureTime()
+    {
+        return exposureTime;
+    }
+    uint8_t getInterval()
+    {
+        return interval;
+    }
     menuAction getMenuAction()
     {
         auto x = action;
@@ -59,7 +69,8 @@ public:
         return x;
     }
     // 1 = forward, -1 = backward
-    int8_t getDirection(){
+    int8_t getDirection()
+    {
         return direction;
     }
 };

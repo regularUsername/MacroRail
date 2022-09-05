@@ -71,12 +71,7 @@ void LCDMenu::drawMenu()
 {
   if (page == 1)
   {
-    display.setTextSize(1);
-    display.clearDisplay();
-    display.setTextColor(BLACK, WHITE);
-    display.setCursor(15, 0);
-    display.print("Macro Rail");
-    display.drawFastHLine(0, 8, 83, BLACK);
+    displayHeader("Macro Rail");
 
     for (uint8_t i = 0; i < 4; i++)
     {
@@ -105,15 +100,20 @@ void LCDMenu::drawMenu()
   }
 }
 
-void LCDMenu::displayIntMenuPage(const char *menuItem, int value, const char *unit)
-{
+
+void LCDMenu::displayHeader(const char *text){
   display.setTextSize(1);
   display.clearDisplay();
   display.setTextColor(BLACK, WHITE);
   display.setCursor(5, 0);
-  display.print(menuItem);
-  display.drawFastHLine(0, 10, 83, BLACK);
+  display.print(text);
+  display.drawFastHLine(0, 8, 83, BLACK);
   display.setCursor(5, 15);
+}
+
+void LCDMenu::displayIntMenuPage(const char *menuItem, int value, const char *unit)
+{
+  displayHeader(menuItem);
   if (unit != nullptr)
   {
     display.print(unit);
@@ -127,13 +127,7 @@ void LCDMenu::displayIntMenuPage(const char *menuItem, int value, const char *un
 
 void LCDMenu::displayFractionalIntMenuPage(const char *menuItem, int value, const char *unit)
 {
-  display.setTextSize(1);
-  display.clearDisplay();
-  display.setTextColor(BLACK, WHITE);
-  display.setCursor(5, 0);
-  display.print(menuItem);
-  display.drawFastHLine(0, 10, 83, BLACK);
-  display.setCursor(5, 15);
+  displayHeader(menuItem);
   if (unit != nullptr)
   {
     display.print(unit);
@@ -152,13 +146,8 @@ void LCDMenu::displayFractionalIntMenuPage(const char *menuItem, int value, cons
 
 void LCDMenu::displayStringMenuPage(const char *menuItem, const char *value)
 {
-  display.setTextSize(1);
-  display.clearDisplay();
-  display.setTextColor(BLACK, WHITE);
-  display.setCursor(15, 0);
-  display.print(menuItem);
-  display.drawFastHLine(0, 10, 83, BLACK);
-  display.setCursor(5, 15);
+  displayHeader(menuItem);
+
   display.print("Value");
   display.setTextSize(2);
   display.setCursor(5, 25);
@@ -183,7 +172,11 @@ void LCDMenu::displayMenuItem(const char *item, int position, boolean selected)
 
 void LCDMenu::navigate(int8_t dir)
 {
-  if (page == 1)
+  if(dir == 0)
+  {
+    return;
+  }
+  else if (page == 1)
   {
     pos = constrain(pos + dir, 0, menuItemCount - 1);
 
@@ -253,18 +246,6 @@ void LCDMenu::select(bool longpress)
   }
 }
 
-uint8_t LCDMenu::getDistance()
-{
-  return distance;
-}
-uint8_t LCDMenu::getExposureTime()
-{
-  return exposureTime;
-}
-uint8_t LCDMenu::getInterval()
-{
-  return interval;
-}
 void LCDMenu::drawText(const char *title, const char *text)
 {
   display.setTextSize(1);
