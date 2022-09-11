@@ -3,21 +3,8 @@
 #include <ClickEncoder.h>
 #include "lcdmenu.h"
 #include <TimerOne.h>
+#include "config.h"
 
-const uint8_t SHUTTER_PIN = A3;
-const uint8_t STEPPER_PIN1 = 9;
-const uint8_t STEPPER_PIN2 = 8;
-const uint8_t STEPPER_PIN3 = 7;
-const uint8_t STEPPER_PIN4 = 6;
-const uint8_t ENCODER_A = A1;
-const uint8_t ENCODER_B = A0;
-const uint8_t ENCODER_BTN = A2;
-const uint8_t LCD_DC = 5;
-const uint8_t LCD_CS = 4;
-const uint8_t LCD_RST = 3;
-// because we are using Hardware SPI connect D13 to CLK and D11 to DIN
-// D12 and LCD_CS are not needed but are still Read and Written to during
-// SPI transfer
 
 void timerIsr();
 
@@ -48,13 +35,11 @@ enum State
 int i;
 State state;
 
-int stepsPerMM = 183;
 int totalDistance;
 int interval;
 bool jogFine = false;
 
 // used for backlash compensation
-const uint8_t BACKLASH_STEPS = 47; // my version of the 28BYJ-48 stepper has roughly 50 steps of backlash
 int8_t lastDirection = -1;
 long stepperLastPosition = 0;
 
@@ -73,8 +58,8 @@ void setup()
     i = 0;
     state = READY;
 
-    stepper.setMaxSpeed(400);
-    stepper.setAcceleration(150);
+    stepper.setMaxSpeed(DEFAULT_MAXSPEED);
+    stepper.setAcceleration(DEFAULT_ACCELERATION);
 
     pinMode(SHUTTER_PIN, OUTPUT);
 }
@@ -89,8 +74,8 @@ void loop()
         if (a == LCDMenu::START)
         {
             state = BRACKETING;
-            totalDistance = lcdmenu.getDistance() * stepsPerMM;
-            interval = (lcdmenu.getInterval() * stepsPerMM) / lcdmenu.interval_div;
+            totalDistance = lcdmenu.getDistance() * STEPS_PER_MM;
+            interval = (lcdmenu.getInterval() * STEPS_PER_MM) / INTERVAL_DIV;
 
             lcdmenu.drawText("Bracketing");
 
@@ -107,7 +92,7 @@ void loop()
         {
             state = DRYRUN;
             lcdmenu.drawText("Dry run");
-            totalDistance = lcdmenu.getDistance() * stepsPerMM;
+            totalDistance = lcdmenu.getDistance() * STEPS_PER_MM;
 
             int8_t dir = lcdmenu.getDirection();
             if (lastDirection != dir)
@@ -116,7 +101,7 @@ void loop()
             }
 
             stepper.moveTo(totalDistance * dir);
-            // wait until button is released before proceding
+            // wait until button is released before proceeding
             while (encoder->getButton() != ClickEncoder::Open);
         }
         else if (a == LCDMenu::JOGMODE)
@@ -136,6 +121,8 @@ void loop()
                 break;
             case ClickEncoder::Held:
                 lcdmenu.select(true);
+                break;
+            default:
                 break;
             }
             lcdmenu.navigate(encoder->getValue());
@@ -248,7 +235,7 @@ void loop()
         int x = encoder->getValue();
         if (x != 0)
         {
-            int relative = jogFine ? x * stepsPerMM / 10 : x * stepsPerMM;
+            int relative = jogFine ? x * STEPS_PER_MM / 10 : x * STEPS_PER_MM;
             stepper.moveTo(stepper.targetPosition() + relative);
         }
         auto b = encoder->getButton();
@@ -262,7 +249,7 @@ void loop()
         {
             jogFine = !jogFine;
             lcdmenu.drawText("Jog Mode", jogFine ? "0.1mm/step" : "1mm/step");
-            // wait until button is released before proceding
+            // wait until button is released before proceeding
             while (encoder->getButton() != ClickEncoder::Open);
         }
     }

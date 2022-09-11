@@ -1,6 +1,7 @@
 #pragma once
 #include <Adafruit_GFX.h>
 #include <Adafruit_PCD8544.h>
+#include "config.h"
 
 class LCDMenu
 {
@@ -21,8 +22,7 @@ private:
     void displayMenuItem(const char *item, int position, boolean selected);
     void displayFractionalIntMenuPage(const char *menuItem, int value, const char *unit);
 
-    const uint8_t default_contrast = 55;
-    uint8_t contrast = default_contrast;
+    uint8_t contrast = DEFAULT_CONTRAST;
     int8_t direction = 1;
     uint8_t distance = 10;
     uint8_t exposureTime = 1;
@@ -46,9 +46,6 @@ public:
     void navigate(int8_t);
     void drawText(const char *, const char * = nullptr);
 
-    // divisor for interval setting precision
-    //  e.g. 1=1mm, 2=0.5mm, 4=0.25mm, 10=0.1mm
-    const uint8_t interval_div = 10;
 
     uint8_t getDistance()
     {

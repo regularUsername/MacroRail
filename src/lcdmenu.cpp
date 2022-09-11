@@ -27,7 +27,7 @@ const uint8_t menuItemCount = sizeof(menuItems) / sizeof(menuItems[0]);
 
 LCDMenu::LCDMenu(uint8_t dc, uint8_t cs, uint8_t rst) : display(dc, cs, rst)
 {
-  interval *= interval_div;
+  interval *= INTERVAL_DIV;
 }
 
 // call in void setup(){}
@@ -59,10 +59,9 @@ void LCDMenu::setContrast(uint8_t contrast)
 
 void LCDMenu::resetDefaults()
 {
-  contrast = default_contrast;
-  distance = 10;
-  interval = 1;
-  setContrast(contrast);
+  distance = DEFAULT_DISTANCE;
+  interval = DEFAULT_INTERVAL;
+  setContrast(DEFAULT_CONTRAST);
   direction = 1;
   menuItems[4] = "Direction -->";
 }
@@ -136,9 +135,9 @@ void LCDMenu::displayFractionalIntMenuPage(const char *menuItem, int value, cons
   display.setCursor(5, 25);
   char strBuf[16];
   uint8_t x = value;
-  uint8_t y = value % interval_div;
-  x = (x - y) / interval_div;
-  snprintf(strBuf, sizeof(strBuf), "%02d.%02d", x, y * (100 / interval_div));
+  uint8_t y = value % INTERVAL_DIV;
+  x = (x - y) / INTERVAL_DIV;
+  snprintf(strBuf, sizeof(strBuf), "%02d.%02d", x, y * (100 / INTERVAL_DIV));
   display.print(strBuf);
   display.setTextSize(2);
   display.display();
